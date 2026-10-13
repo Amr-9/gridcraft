@@ -19,6 +19,7 @@ pub fn active_pivot(app: &SheetApp) -> Option<String> {
 pub fn show(app: &mut SheetApp, ui: &mut Ui) {
     let Some(name) = active_pivot(app) else { return };
     let t = Tokens::get(ui.ctx());
+    let lang = crate::i18n::current(ui.ctx());
     let info = match app.session.run("pivot.fields", json!({"pivot": name})) {
         Ok(v) => v,
         Err(_) => return,
@@ -83,7 +84,7 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
             crate::i18n::columns(ui, 2, |cols| {
                 for (i, (key, label)) in [("filters", "Filters"), ("columns", "Columns"), ("rows", "Rows"), ("values", "Values")].iter().enumerate() {
                     let ui = &mut cols[i % 2];
-                    ui.label(egui::RichText::new(*label).strong());
+                    ui.label(egui::RichText::new(lang.tr(label)).strong());
                     egui::Frame::NONE.fill(t.window).corner_radius(4.0).inner_margin(4.0).show(ui, |ui| {
                         ui.set_min_size(vec2(ui.available_width(), 60.0));
                         for f in area_with_values(key) {
@@ -101,7 +102,7 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
                                         ("filters", "Move to Report Filter"),
                                         ("values", "Move to Values"),
                                     ] {
-                                        if to != *key && (!is_values || matches!(to, "rows" | "columns")) && ui.button(l).clicked() {
+                                        if to != *key && (!is_values || matches!(to, "rows" | "columns")) && ui.button(lang.tr(l)).clicked() {
                                             app.run_or_alert("pivot.moveField", json!({"pivot": name, "field": f, "from": key, "to": to}));
                                         }
                                     }
@@ -110,26 +111,31 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
                                     }
                                     if *key == "values" {
                                         ui.separator();
-                                        for (func, l) in [("sum", "Sum"), ("count", "Count"), ("average", "Average"), ("max", "Max"), ("min", "Min")]
-                                        {
-                                            if ui.button(format!("Summarize by {l}")).clicked() {
+                                        for (func, l) in [
+                                            ("sum", "Summarize by Sum"),
+                                            ("count", "Summarize by Count"),
+                                            ("average", "Summarize by Average"),
+                                            ("max", "Summarize by Max"),
+                                            ("min", "Summarize by Min"),
+                                        ] {
+                                            if ui.button(lang.tr(l)).clicked() {
                                                 app.run_or_alert("pivot.valueSettings", json!({"pivot": name, "field": f, "func": func}));
                                             }
                                         }
                                         for (sa, l) in [
-                                            ("normal", "No Calculation"),
-                                            ("percentOfGrandTotal", "% of Grand Total"),
-                                            ("runningTotal", "Running Total"),
-                                            ("rank", "Rank"),
+                                            ("normal", "Show as No Calculation"),
+                                            ("percentOfGrandTotal", "Show as % of Grand Total"),
+                                            ("runningTotal", "Show as Running Total"),
+                                            ("rank", "Show as Rank"),
                                         ] {
-                                            if ui.button(format!("Show as {l}")).clicked() {
+                                            if ui.button(lang.tr(l)).clicked() {
                                                 app.run_or_alert("pivot.valueSettings", json!({"pivot": name, "field": f, "showAs": sa}));
                                             }
                                         }
                                     } else {
                                         ui.separator();
                                         for (o, l) in [("asc", "Sort A to Z"), ("desc", "Sort Z to A")] {
-                                            if ui.button(l).clicked() {
+                                            if ui.button(lang.tr(l)).clicked() {
                                                 app.run_or_alert("pivot.sort", json!({"pivot": name, "field": f, "order": o}));
                                             }
                                         }
@@ -139,7 +145,7 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
                                             ("months", "Group by Months"),
                                             ("none", "Ungroup"),
                                         ] {
-                                            if ui.button(l).clicked() {
+                                            if ui.button(lang.tr(l)).clicked() {
                                                 app.run_or_alert("pivot.group", json!({"pivot": name, "field": f, "by": g}));
                                             }
                                         }
@@ -162,10 +168,10 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
                 if ui.button(crate::i18n::current(ui.ctx()).tr("Calculated Field…")).clicked() {
                     app.run_or_alert("pivot.calculatedField", json!({"pivot": name}));
                 }
-                egui::ComboBox::from_id_salt("pv_layout").selected_text("Report Layout").show_ui(ui, |ui| {
+                egui::ComboBox::from_id_salt("pv_layout").selected_text(lang.tr("Report Layout")).show_ui(ui, |ui| {
                     crate::i18n::column(ui, |ui| {
                         for (l, v) in [("Compact", "compact"), ("Outline", "outline"), ("Tabular", "tabular")] {
-                            if ui.button(l).clicked() {
+                            if ui.button(lang.tr(l)).clicked() {
                                 app.run_or_alert("pivot.layout", json!({"pivot": name, "layout": v}));
                             }
                         }

@@ -185,6 +185,10 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font: 
             let enter = i.consume_key(egui::Modifiers::NONE, Key::Enter) || i.consume_key(egui::Modifiers::SHIFT, Key::Enter);
             let tab = i.consume_key(egui::Modifiers::NONE, Key::Tab) || i.consume_key(egui::Modifiers::SHIFT, Key::Tab);
             let esc = i.consume_key(egui::Modifiers::NONE, Key::Escape);
+            // Backspace takes back the AutoComplete proposal (Excel's selected rest), not a typed character.
+            if ed.completion.is_some() && i.consume_key(egui::Modifiers::NONE, Key::Backspace) {
+                ed.completion = None;
+            }
             (enter, tab, esc, alt_enter, cmd_enter, ctrl_shift_enter, m.shift)
         });
         if alt_enter {
@@ -210,6 +214,8 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font: 
         if esc {
             if !ed.autocomplete.is_empty() {
                 ed.autocomplete.clear();
+            } else if ed.completion.is_some() {
+                ed.completion = None;
             } else {
                 cancel = true;
             }
@@ -336,7 +342,8 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font: 
     }
     if resp.changed() {
         ed.completion = None;
-        if !ed.is_formula()
+        if app.ui.autocomplete
+            && !ed.is_formula()
             && ed.caret == ed.text.chars().count()
             && let Some(sh) = app.session.active().and_then(|d| d.wb.sheet(ed.sheet))
         {
@@ -362,8 +369,7 @@ pub fn editor_widget(app: &mut SheetApp, ui: &mut egui::Ui, id: egui::Id, font: 
     // and positioning the suffix relative to the widget's left edge separates the word.
     let mut completion_caret = None;
     if let Some(full) = &ed.completion
-        && full.len() > ed.text.len()
-        && full.get(ed.text.len()..).is_some()
+        && crate::editor::completion_rest(full, &ed.text).is_some()
     {
         let mut g = ui.painter().layout_no_wrap(
             full.clone(),

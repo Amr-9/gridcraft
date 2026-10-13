@@ -2238,6 +2238,7 @@ fn view(app: &mut SheetApp, ui: &mut Ui) {
     let lang = app.ui.language;
     let page_layout =
         app.session.active().and_then(|d| d.wb.active().map(|s| s.view == gridcraft_engine::model::SheetViewMode::PageLayout)).unwrap_or(false);
+    // Two columns of two: four stacked rows overflow the ribbon at higher UI scaling.
     crate::i18n::column(ui, |ui| {
         // Rulers exist only in Page Layout view.
         ui.spacing_mut().interact_size.y = 18.0;
@@ -2248,17 +2249,20 @@ fn view(app: &mut SheetApp, ui: &mut Ui) {
         if ruler_resp.changed() {
             act(app, "view.ruler", json!({"on": ruler}));
         }
-        let mut fb = app.session.prefs.formula_bar;
-        let resp = ui.checkbox(&mut fb, lang.tr("Formula Bar"));
-        control_keytip(app, ui, &resp, "view.formulaBar");
-        if resp.changed() || invoke(app, "view.formulaBar") {
-            act(app, "view.formulaBar", json!({"on": checkbox_on(resp.changed(), fb)}));
-        }
         let mut g = s.0;
         let resp = ui.checkbox(&mut g, lang.tr("Gridlines"));
         control_keytip(app, ui, &resp, "view.gridlines");
         if resp.changed() {
             act(app, "view.gridlines", json!({"on": g}));
+        }
+    });
+    ui.add_space(6.0);
+    crate::i18n::column(ui, |ui| {
+        let mut fb = app.session.prefs.formula_bar;
+        let resp = ui.checkbox(&mut fb, lang.tr("Formula Bar"));
+        control_keytip(app, ui, &resp, "view.formulaBar");
+        if resp.changed() || invoke(app, "view.formulaBar") {
+            act(app, "view.formulaBar", json!({"on": checkbox_on(resp.changed(), fb)}));
         }
         let mut h = s.1;
         let resp = ui.checkbox(&mut h, lang.tr("Headings"));
