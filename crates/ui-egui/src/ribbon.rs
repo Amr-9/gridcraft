@@ -2220,8 +2220,6 @@ fn review(app: &mut SheetApp, ui: &mut Ui) {
 fn view(app: &mut SheetApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     let _ = t;
-    sheet_direction(app, ui);
-    sep(ui);
     for (icon, label, cmd) in [
         (Icon::Normal, "Normal", "view.normal"),
         (Icon::PageBreak, "Page Break\nPreview", "view.pageBreakPreview"),
